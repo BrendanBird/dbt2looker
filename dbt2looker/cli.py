@@ -3,6 +3,7 @@ import json
 import logging
 import pathlib
 import os
+import re
 
 import yaml
 try:
@@ -46,7 +47,6 @@ def get_catalog(prefix: str):
     parser.validate_catalog(raw_catalog)
     logging.debug(f'Detected valid catalog at {path}')
     return raw_catalog
-
 
 def get_dbt_project_config(prefix: str):
     paths = list(pathlib.Path(prefix).rglob('dbt_project.yml'))
