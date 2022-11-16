@@ -351,5 +351,6 @@ def lookml_model_from_dbt_model(model: models.DbtModel, dbt_project_name: str):
         }
     }
     contents = lkml.dump(lookml)
-    filename = f'{model.name}.model.lkml'
+    filename = f'{dbt_project_name}.model'
     return models.LookModelFile(filename=filename, contents=contents)
+
