@@ -4,7 +4,6 @@ import logging
 import pathlib
 import os
 import re
-
 import yaml
 try:
     from yaml import CLoader as Loader
