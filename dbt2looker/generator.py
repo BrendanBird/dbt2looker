@@ -1,6 +1,6 @@
 import logging
+from typing import List
 import re
-
 import lkml
 
 from . import models
@@ -49,8 +49,8 @@ LOOKER_DTYPE_MAP = {
         'TIME': 'string',        # can we support time?
         'TIMESTAMP': 'timestamp',
         'TIMESTAMP_NTZ': 'timestamp',
-        # TIMESTAMP_LTZ not supported (see https://docs.looker.com/reference/field-params/dimension_group)
-        # TIMESTAMP_TZ not supported (see https://docs.looker.com/reference/field-params/dimension_group)
+        'TIMESTAMP_LTZ': 'timestamp',    #not supported (see https://docs.looker.com/reference/field-params/dimension_group)
+        'TIMESTAMP_TZ': 'timestamp',     #not supported (see https://docs.looker.com/reference/field-params/dimension_group)
         'VARIANT': 'string',
         'OBJECT': 'string',
         'ARRAY': 'string',
@@ -178,8 +178,6 @@ looker_date_types = ['date']
 looker_scalar_types = ['number', 'yesno', 'string']
 
 looker_timeframes = [
-    'raw',
-    'time',
     'date',
     'week',
     'month',
@@ -207,7 +205,7 @@ def lookml_date_time_dimension_group(column: models.DbtModelColumn, adapter_type
         'sql': column.meta.dimension.sql or f'${{TABLE}}.{column.name}',
         'description': column.meta.dimension.description or column.description,
         'datatype': map_adapter_type_to_looker(adapter_type, column.data_type),
-        'timeframes': ['raw', 'time', 'hour', 'date', 'week', 'month', 'quarter', 'year']
+        'timeframes': [ 'time', 'hour', 'date', 'week', 'month', 'quarter', 'year']
     }
 
 
@@ -218,7 +216,7 @@ def lookml_date_dimension_group(column: models.DbtModelColumn, adapter_type: mod
         'sql': column.meta.dimension.sql or f'${{TABLE}}.{column.name}',
         'description': column.meta.dimension.description or column.description,
         'datatype': map_adapter_type_to_looker(adapter_type, column.data_type),
-        'timeframes': ['raw', 'date', 'week', 'month', 'quarter', 'year']
+        'timeframes': [ 'date', 'week', 'month', 'quarter', 'year']
     }
 
 
@@ -306,10 +304,16 @@ def lookml_measure(measure_name: str, column: models.DbtModelColumn, measure: mo
 
 
 def lookml_view_from_dbt_model(model: models.DbtModel, adapter_type: models.SupportedDbtAdapters):
+    
+    looker_attributes_format = "{{_user_attributes['dev_schema']}}"
+    looker_schema_format = re.search("(\_\w+)",str({model.db_schema}))
+    if looker_schema_format:
+        looker_schema_format = looker_schema_format.group(1)
+    
     lookml = {
         'view': {
             'name': model.name,
-            'sql_table_name': model.relation_name,
+            'sql_table_name': f'-- if dev  -- {model.database}.{looker_attributes_format}{looker_schema_format}.{model.name} \n \t\t\t\t\t\t\t\t -- if prod -- {model.database}.public{looker_schema_format}.{model.name} \n',
             'dimension_groups': lookml_dimension_groups_from_model(model, adapter_type),
             'dimensions': lookml_dimensions_from_model(model, adapter_type),
             'measures': lookml_measures_from_model(model),
